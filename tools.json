@@ -1,0 +1,299 @@
+{
+  "tools": [
+    {
+      "name": "search_parts",
+      "title": "Search car parts",
+      "description": "Search JOY Automart's automotive parts catalogue in Bangladesh. Accepts English, Bangla (e.g. 'টয়োটা এক্সিও ব্রেক প্যাড') or Banglish. Returns retail prices in BDT, availability and a product URL. Catalogue-only RFQ templates are omitted unless include_rfq_catalogue is true. Results are fitment candidates, not guarantees.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Part name, OEM number or vehicle, in English or Bangla."
+          },
+          "make": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Vehicle make, e.g. Toyota."
+          },
+          "chassis": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "Chassis code, e.g. NZE141 or G05."
+          },
+          "category": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "in_stock_only": {
+            "type": "boolean",
+            "default": false
+          },
+          "include_rfq_catalogue": {
+            "type": "boolean",
+            "default": false,
+            "description": "Include catalogue-only templates available through a parts request (RFQ)."
+          },
+          "max_price_bdt": {
+            "type": "number",
+            "minimum": 0
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1
+          },
+          "page_size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "default": 10
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_part",
+      "title": "Get part details",
+      "description": "Full public detail for one catalogue part: BDT price, stock, minimum order, verified offers and bulk price breaks.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "part_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        },
+        "required": [
+          "part_id"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "search_vehicles",
+      "title": "Search cars for sale",
+      "description": "Search JOY Auto Exchange vehicle listings in Bangladesh by make, model, year, fuel and BDT price. Only stated listing facts are returned.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "make": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "fuel_type": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "verified_only": {
+            "type": "boolean",
+            "default": false
+          },
+          "include_unpriced": {
+            "type": "boolean",
+            "default": false,
+            "description": "Include vehicles with a pending or undisclosed asking price (POA)."
+          },
+          "min_year": {
+            "type": "integer"
+          },
+          "max_year": {
+            "type": "integer"
+          },
+          "min_price_bdt": {
+            "type": "number",
+            "minimum": 0
+          },
+          "max_price_bdt": {
+            "type": "number",
+            "minimum": 0
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "latest",
+              "price_asc",
+              "price_desc",
+              "year_desc"
+            ],
+            "default": "latest"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1
+          },
+          "page_size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "default": 10
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_vehicle",
+      "title": "Get car details",
+      "description": "Full public detail for one JOY Auto Exchange listing (by listing id or slug): BDT price, specs, photos and, when the car passed JOY's human QC, a summary of the inspection. Only stated listing facts are returned; seller contact details and reserves are never exposed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "vehicle_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "description": "listing_id or slug from search_vehicles."
+          }
+        },
+        "required": [
+          "vehicle_id"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_auction_status",
+      "title": "Auction status",
+      "description": "Public status of one live or recent JOY auction: current bid in BDT, bid count, end time and anti-snipe extensions. Observation only: bidding needs a verified dealer account and a human. The seller's reserve and bidder identities are never shown. Returns an error while live auctions are not open.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "auction_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "auction_id"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "compare_vehicles",
+      "title": "Compare cars",
+      "description": "Side-by-side comparison of 2 to 4 listings (ids or slugs from search_vehicles): price, year, mileage, fuel, verification and inspection grade. Listings that cannot be found are reported, not hidden.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "vehicle_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "minItems": 2,
+            "maxItems": 4
+          }
+        },
+        "required": [
+          "vehicle_ids"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_buying_guide",
+      "title": "Bangladesh buying terms",
+      "description": "How to buy from JOY Automart: currency (BDT), payment methods (card, bKash/Nagad/Rocket, cash on delivery), Dhaka and nationwide delivery zones and fees, human contact, and how an authenticated agent can place orders.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "prepare_buyer_handoff",
+      "title": "Prepare purchase handoff",
+      "description": "Compose the links a human buyer uses to complete a purchase: the product page and a pre-filled WhatsApp message with canonical part details and fitment limitations. JOY confirms pricing and purchase eligibility. Creates nothing and charges nothing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "part_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000,
+            "default": 1
+          },
+          "vehicle": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Make, model, year or VIN, to speed up fitment checks."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "part_id"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    }
+  ]
+}

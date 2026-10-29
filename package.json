@@ -1,0 +1,42 @@
+{
+  "name": "@joyautomart/mcp-server",
+  "version": "1.0.0",
+  "description": "stdio proxy for the JOY Automart remote MCP server (Streamable HTTP) – automotive parts and vehicles in Bangladesh",
+  "type": "module",
+  "bin": {
+    "joyautomart-mcp-server": "bin/joyautomart-mcp.js"
+  },
+  "files": [
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "mcp-server",
+    "automotive",
+    "car-parts",
+    "bangladesh"
+  ],
+  "homepage": "https://www.joyautomart.com/developers",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.0"
+  },
+  "mcpName": "io.github.www-joyautomart-com/mcp-server",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/www-joyautomart-com/mcp-server.git"
+  },
+  "bugs": {
+    "url": "https://github.com/www-joyautomart-com/mcp-server/issues"
+  },
+  "author": "JOY Automart (Ahmed Joyadh)"
+}

@@ -1,0 +1,12 @@
+# Smithery config for the npm stdio package (repo root of www-joyautomart-com/mcp-server; npm package publication pending).
+# The remote server can also be added directly at https://smithery.ai/new using the URL https://www.joyautomart.com/mcp
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      joyAgentToken:
+        type: string
+        description: Optional JOY buyer token (joyagt_...)
+  commandFunction: |-
+    (config) => ({ command: 'npx', args: ['-y', '@joyautomart/mcp-server'], env: config.joyAgentToken ? { JOY_AGENT_TOKEN: config.joyAgentToken } : {} })
