@@ -97,7 +97,7 @@ node bin/joyautomart-mcp.js            # or: --url https://www.joyautomart.com/m
 `JOY_AGENT_TOKEN` is optional; public tools work without it.
 
 ## Listings
-- Official MCP Registry name: `io.github.www-joyautomart-com/mcp-server` ([server.json](server.json))
+- Official MCP Registry name: `com.joyautomart/mcp` ([server.json](server.json); listing pending domain verification)
 - Smithery config: [smithery.yaml](smithery.yaml)
 
 ## Support

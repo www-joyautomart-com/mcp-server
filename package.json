@@ -30,7 +30,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.0"
   },
-  "mcpName": "io.github.www-joyautomart-com/mcp-server",
+  "mcpName": "com.joyautomart/mcp",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/www-joyautomart-com/mcp-server.git"
