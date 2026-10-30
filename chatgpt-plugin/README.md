@@ -28,7 +28,7 @@ From the repository root:
 ```sh
 npm ci --ignore-scripts
 node scripts/verify-chatgpt-plugin.mjs --output /tmp/joy-plugin-check
-python3 scripts/build-chatgpt-plugin.py --output /tmp/JOY_Automart_ChatGPT_Plugin_v1.0.0_DRAFT.zip
+python3 scripts/build-chatgpt-plugin.py --output /tmp/JOY_Automart_ChatGPT_Plugin_v1.0.1_UPLOAD.zip
 ```
 
 On Node 24+, use `node --use-env-proxy` where the environment requires its
@@ -36,8 +36,10 @@ configured HTTP proxy. Preserve the environment's CA trust. The verifier only
 uses public read-only tools, validates returned data and saves raw evidence.
 It never submits a buyer token, purchase, payment, message or bid.
 
-The builder inspects the actual ZIP, field lengths, PNG dimensions, single MCP
-configuration and five-positive/three-negative review metadata. Passing this
+The builder produces a standalone upload ZIP with the portable manifests and
+synchronised `.codex-plugin/plugin.json` and `.mcp.json` compatibility files
+directly at its root. It inspects the actual ZIP, field lengths, PNG dimensions,
+single MCP configuration and five-positive/three-negative review metadata. Passing this
 check establishes package structure, not approval or public submission readiness.
 
 ## Complete the submission materials
@@ -64,8 +66,12 @@ check establishes package structure, not approval or public submission readiness
    submits for review. After approval, publishing the approved version is a
    separate action.
 
-Do not upload the entire source/release kit as the plugin. The public-upload ZIP
-contains only `joy-automart/plugin.json`, `mcp.json` and its referenced PNG asset.
+Upload `JOY_Automart_ChatGPT_Plugin_v1.0.1_UPLOAD.zip` directly without extracting
+or re-zipping it. Do not upload the earlier `JOY_Automart_ChatGPT_Plugin_Kit.zip`.
+The standalone upload contains `plugin.json`, `mcp.json`,
+`.codex-plugin/plugin.json`, `.mcp.json` and the referenced PNG, at the ZIP root.
+The compatibility manifest uses the same identity, listing and review metadata
+as the portable source; it introduces no additional server or private app.
 Do not include private credentials or reviewer-account passwords in any archive.
 This public connection needs no reviewer login; final portal connection testing
 is still required.

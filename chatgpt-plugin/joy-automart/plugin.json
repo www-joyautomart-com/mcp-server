@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "joy-automart",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Search JOY Automart car parts and vehicle listings in Bangladesh, compare cars, and prepare a human purchase handoff.",
   "author": {
     "name": "JOY Automart",
@@ -93,7 +93,7 @@
       },
       "publication": {
         "countries": [],
-        "release_notes": "Initial public-directory candidate. Connects JOY Automart's existing eight unauthenticated public MCP tools for parts and vehicle discovery, comparison, buying terms and human purchase handoff. Includes English and Bangla starter prompts. This package does not enable authenticated agent ordering or payments."
+        "release_notes": "Packaging correction: the standalone upload ZIP now places manifests at its root and includes synchronized Codex compatibility files. Connects JOY Automart's existing eight unauthenticated public MCP tools for parts and vehicle discovery, comparison, buying terms and human purchase handoff. Includes English and Bangla starter prompts. This package does not enable authenticated agent ordering or payments."
       }
     }
   }

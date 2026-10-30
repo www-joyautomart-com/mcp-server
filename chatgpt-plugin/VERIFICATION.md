@@ -1,5 +1,20 @@
 # Verification — 30 October 2026
 
+## Version 1.0.1 packaging correction
+
+The previous downloadable kit contained a nested plugin ZIP. That outer kit is
+not a valid direct upload. The corrected standalone archive puts the plugin at
+the ZIP root and adds `.codex-plugin/plugin.json` and `.mcp.json` compatibility
+files generated from the portable source. Identity, listing, review cases and
+publication settings remain synchronised. No authentication or server behaviour
+has changed. Package validation also rejects nested kits and checks the fallback
+manifest and its referenced server and icon files.
+
+The corrected archive has been checked locally. Acceptance by the actual upload
+page, final in-host testing and review approval have not been established.
+
+## Existing server verification
+
 The candidate uses JOY Automart MCP server version **1.2.0** at
 `https://www.joyautomart.com/mcp` with **no authentication**. Source baseline:
 `www-joyautomart-com/mcp-server` commit `7d45556b636ec5c0347a2bceb1d04c946b57445c`.
