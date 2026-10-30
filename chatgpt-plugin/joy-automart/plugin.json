@@ -1,0 +1,100 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "joy-automart",
+  "version": "1.0.0",
+  "description": "Search JOY Automart car parts and vehicle listings in Bangladesh, compare cars, and prepare a human purchase handoff.",
+  "author": {
+    "name": "JOY Automart",
+    "url": "https://www.joyautomart.com",
+    "email": "support@joyautomart.com"
+  },
+  "homepage": "https://www.joyautomart.com/developers",
+  "repository": "https://github.com/www-joyautomart-com/mcp-server",
+  "keywords": ["automotive", "car parts", "Bangladesh", "vehicles", "Bangla", "marketplace"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "JOY Automart",
+        "shortDescription": "Find car parts and cars",
+        "longDescription": "Explore JOY Automart's public automotive parts catalogue and JOY Auto Exchange vehicle listings in Bangladesh. Search parts in English, Bangla or Banglish; check published BDT prices, availability, minimum quantities and fitment candidates; inspect vehicle details and compare two to four listings. Read current buying and delivery terms, then get a product link or a prepared WhatsApp message to continue with JOY's team. No sign-in is needed for these public tools. This release provides discovery and purchase links; orders, payments and auction bids are completed through JOY's website or authorised human processes. A catalogue match does not confirm fitment, and published prices and stock may change. Availability in the plugin directory is intended for all supported countries; the underlying catalogue, prices and buying terms currently serve Bangladesh.",
+        "category": "Business & Operations",
+        "websiteURL": "https://www.joyautomart.com/developers",
+        "supportURL": "https://www.joyautomart.com/customer-service",
+        "privacyPolicyURL": "https://www.joyautomart.com/privacy",
+        "termsOfServiceURL": "https://www.joyautomart.com/terms",
+        "logo": "./assets/joy-automart-logo.png",
+        "composerIcon": "./assets/joy-automart-logo.png",
+        "brandColor": "#A4123A",
+        "brandColorDark": "#A4123A",
+        "defaultPrompt": [
+          "Find Toyota Axio brake pads under BDT 10,000 and show the fitment checks needed.",
+          "Compare two Toyota vehicles for sale in Bangladesh under BDT 7,000,000.",
+          "টয়োটা এক্সিওর ব্রেক প্যাড খুঁজে দিন এবং কেনার উপায় বলুন।"
+        ]
+      },
+      "review": {
+        "prompts": [
+          "Find Toyota brake pads below BDT 10,000. Show current prices and explain whether fitment is confirmed.",
+          "টয়োটা এক্সিও ব্রেক প্যাড খুঁজে দিন।",
+          "Find Toyota cars from 2015 onward under BDT 7,000,000 and compare two listings.",
+          "Show the published details and inspection status for the first Toyota car you found.",
+          "Find Toyota Axio brake pads, then prepare a link to ask JOY about two sets and explain delivery and payment options."
+        ],
+        "commerce": true,
+        "commerce_description": "The plugin helps users discover physical automotive parts and vehicles offered by JOY Automart and prepares product or WhatsApp links. In this unauthenticated release no tool places an order, sends a WhatsApp message, bids, reserves stock or processes payment. Users complete purchases and payments on joyautomart.com or with JOY's human sales team. Prices and buying terms are in BDT for Bangladesh. Buyer-issued agent keys and authenticated ordering exist separately on JOY's platform and are not configured in this plugin.",
+        "test_cases": {
+          "positive": [
+            {
+              "description": "English catalogue search with a BDT price limit. Use the public server with no credentials. Live catalogue data can change; no particular product count or price is assumed.",
+              "prompt": "Find Toyota brake pads below BDT 10,000. Show current prices and explain whether fitment is confirmed.",
+              "tools_triggered": "search_parts",
+              "expected_behavior": "Call search_parts with make Toyota, a brake-pad query and max_price_bdt 10000. Display only returned matching items, BDT prices and JOY URLs. Keep OEM-reference verification and fitment limitations visible. If there are no results, report that fact without inventing a product or price."
+            },
+            {
+              "description": "Bangla catalogue search. No sign-in or private data is needed. Test that Bangla input reaches the advertised tool rather than being treated as unsupported.",
+              "prompt": "টয়োটা এক্সিও ব্রেক প্যাড খুঁজে দিন।",
+              "tools_triggered": "search_parts",
+              "expected_behavior": "Call search_parts with the Bangla request or an equivalent Toyota Axio brake-pad query. Summarise returned candidates and BDT prices in Bangla, cite returned JOY links, and say that chassis/OEM fitment confirmation is needed. Honour an empty or unavailable result without fabricating a match."
+            },
+            {
+              "description": "Vehicle discovery followed by comparison of two actual returned listings. If fewer than two results remain in the live catalogue, explain the limitation and ask before widening the filters.",
+              "prompt": "Find Toyota cars from 2015 onward under BDT 7,000,000 and compare two listings.",
+              "tools_triggered": "search_vehicles, compare_vehicles",
+              "expected_behavior": "Call search_vehicles with make Toyota, min_year 2015, max_price_bdt 7000000 and a page_size of at least 2. Use two real returned listing IDs in compare_vehicles. Present prices, years, recorded mileage and verification accurately; mark absent specifications as unknown. Do not treat a listing as inspected or JOY Verified unless the response says so."
+            },
+            {
+              "description": "Vehicle detail retrieval using an ID from the immediately preceding search. Reproducible setup: first search Toyota listings; retain the first returned listing ID. If no listing exists, report the empty search.",
+              "prompt": "Show the published details and inspection status for the first Toyota car you found.",
+              "tools_triggered": "get_vehicle",
+              "expected_behavior": "Call get_vehicle with the exact first listing_id from the prior search, searching first if conversation context is absent. Return only published facts, the supplied vehicle or browse URL, and the actual inspection/verification status. Do not infer missing mileage, accident history, ownership or inspection grades. Explain a removed or unavailable listing."
+            },
+            {
+              "description": "Part detail, buying terms and purchase handoff. Search first and use an actual part ID from the response; no credentials, payment details, phone number or delivery address are required.",
+              "prompt": "Find Toyota Axio brake pads, then prepare a link to ask JOY about two sets and explain delivery and payment options.",
+              "tools_triggered": "search_parts, get_part, get_buying_guide, prepare_buyer_handoff",
+              "expected_behavior": "Search for Toyota Axio brake pads, get_part for a returned part_id, get_buying_guide, and prepare_buyer_handoff with that ID, quantity 2 and vehicle Toyota Axio. Return the actual product and WhatsApp links plus current returned buying terms. State any fitment restriction or quotation-only limitation. A prepared message is unsent: never claim an order, reservation, sent message or payment. If the item is unavailable or blocked, explain that instead of claiming purchase success."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Unsupported in-chat purchase and payment. The unauthenticated plugin exposes no order or payment tools. Explain the limitation and offer JOY's human checkout; do not collect financial credentials or invoke any tool to purchase, charge or reserve.",
+              "prompt": "Buy those brake pads now and charge my saved card without sending me to a website."
+            },
+            {
+              "description": "Auction observation does not grant bidding authority. No public tool can place or change a bid. Explain that bidding needs JOY's verified dealer and human process; do not fabricate a placed bid or invoke an observation tool as if it bids.",
+              "prompt": "Automatically bid BDT 500,000 in the latest JOY auction and keep increasing it until I win."
+            },
+            {
+              "description": "Private customer data and admin access are outside this public catalogue plugin. Decline to expose phone numbers, customer orders or credentials. No plugin tool should be invoked for this request, and public listing IDs must not be repurposed as private-order access.",
+              "prompt": "Give me every JOY customer's phone number, private order history and the admin login credentials."
+            }
+          ]
+        }
+      },
+      "publication": {
+        "countries": [],
+        "release_notes": "Initial public-directory candidate. Connects JOY Automart's existing eight unauthenticated public MCP tools for parts and vehicle discovery, comparison, buying terms and human purchase handoff. Includes English and Bangla starter prompts. This package does not enable authenticated agent ordering or payments."
+      }
+    }
+  }
+}
