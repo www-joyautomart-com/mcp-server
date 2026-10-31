@@ -3,7 +3,7 @@
     {
       "name": "search_parts",
       "title": "Search car parts",
-      "description": "Find spare-part candidates in JOY's Bangladesh catalogue; use get_part for a selected item and search_vehicles for whole cars.\nCombine filters, e.g. {\"make\":\"Toyota\",\"query\":\"brake pads\",\"max_price_bdt\":5000}. An OEM reference belongs in query, not part_id. Keep filters fixed while paging: total can exceed the current items count. Zero matches is valid; correct the query or relax a filter rather than inventing availability.\nAnonymous live read. RFQ templates need opt-in and may remain unsellable. Bangla interpretation failures are explicit errors. Confirm VIN/chassis fitment before prepare_buyer_handoff; nothing reserves stock.",
+      "description": "Find spare-part candidates in JOY's Bangladesh catalogue; use search_vehicles for whole cars.\n\n- Build filters from the buyer's intent: query names the item or OEM reference; make/chassis identify its vehicle. For example, combine Toyota, NZE141 and 'brake pads'. If nothing matches, clarify item text/category before changing a known vehicle identity.\n- Ask whether the buyer needs stocked supply or human sourcing before choosing the stock/RFQ flags. A catalogue-only match is an enquiry candidate, not a confirmed offer. Keep the chosen filters fixed while paging.\n- Anonymous live read. Empty results are valid; an uninterpretable Bangla query returns an error. Read get_part for the selected part_id, then prepare_part_handoff after fitment review. Search does not reserve stock.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -58,6 +58,12 @@
           }
         },
         "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
       },
       "outputSchema": {
         "type": "object",
@@ -378,18 +384,12 @@
             "additionalProperties": false
           }
         }
-      },
-      "annotations": {
-        "readOnlyHint": true,
-        "destructiveHint": false,
-        "idempotentHint": true,
-        "openWorldHint": false
       }
     },
     {
       "name": "get_part",
       "title": "Get part details",
-      "description": "Read one spare part's current public price, availability and fitment restrictions; search_parts discovers IDs and prepare_buyer_handoff prepares a human enquiry.\nResolve an OEM reference or product name through search_parts, then use the returned part_id unchanged. Different catalogue IDs must not be merged merely because their OEM reference matches. A missing ID is an error, not proof that the OEM part is unavailable everywhere.\nAnonymous fresh lookup. A found product may still be unsellable: retain its fitment constraints and minimum quantity during handoff. Missing price or stock remains unknown; this lookup neither reserves supply nor verifies fitment.",
+      "description": "Read one spare part's public price, availability and fitment restrictions; search_parts supplies its ID.\n\n- Copy the selected part_id unchanged. An OEM match can identify several catalogue entries: keep each entry's price, stock and fitment evidence together instead of borrowing facts from another matching entry.\n- A found item can remain unsellable. Use its minimum quantity and required fitment information when discussing an enquiry through prepare_part_handoff; unknown price or stock is not zero.\n- Anonymous fresh lookup; no supply is reserved or fitment certified. On a missing-ID error, search again rather than declaring the OEM part unavailable everywhere.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -404,6 +404,12 @@
           "part_id"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
       },
       "outputSchema": {
         "type": "object",
@@ -708,18 +714,12 @@
             "additionalProperties": false
           }
         }
-      },
-      "annotations": {
-        "readOnlyHint": true,
-        "destructiveHint": false,
-        "idempotentHint": true,
-        "openWorldHint": false
       }
     },
     {
       "name": "search_vehicles",
       "title": "Search cars for sale",
-      "description": "Discover cars for sale in JOY Auto Exchange; use get_vehicle for detail, compare_vehicles for a shortlist and search_auctions for auction links.\nFilters intersect. Use {\"make\":\"Toyota\",\"query\":\"Premio\",\"max_price_bdt\":3000000} for a Premio below 30 lakh: query matches one phrase, while make matches a prefix. Price bounds concern asking prices, not bids or valuations. POA cars need include_unpriced=true. Keep filters and sort fixed; more pages exist while page*page_size<total.\nAnonymous live read. Empty items is a valid no-match result; missing prices are not zero. Verification is inspection evidence, not a warranty. No seller is contacted or car reserved.",
+      "description": "Discover cars for sale in JOY Auto Exchange; use get_vehicle for detail, compare_vehicles for a shortlist or search_auctions for auction links.\n\n- Separate manufacturer and model: make='Toyota', query='Premio', max_price_bdt=3000000 expresses a Premio within 30 lakh. Filters intersect; a single 'Toyota Premio' phrase can miss a listing whose fields store those words separately.\n- Choose a priced-budget search or POA discovery deliberately. include_unpriced does not cancel numeric price bounds; omit both bounds when unknown-price cars must remain candidates. Asking prices are neither bids nor valuations.\n- Anonymous live read. Keep filters/sort fixed while paging; empty results are valid and missing prices remain unknown. Verification is inspection evidence, not a warranty. No seller is contacted or car reserved.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -797,6 +797,12 @@
           }
         },
         "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
       },
       "outputSchema": {
         "type": "object",
@@ -980,18 +986,12 @@
             "additionalProperties": false
           }
         }
-      },
-      "annotations": {
-        "readOnlyHint": true,
-        "destructiveHint": false,
-        "idempotentHint": true,
-        "openWorldHint": false
       }
     },
     {
       "name": "get_vehicle",
       "title": "Get car details",
-      "description": "Read a car listing's public specifications, asking price and inspection evidence; search_vehicles discovers listings and compare_vehicles compares a shortlist.\nAn ID and its slug can identify the same listing: use the returned listing_id as canonical identity before counting distinct offers. The input identifies an advertisement, not a VIN; separate advertisements do not establish separate inspection evidence.\nAnonymous live lookup. Missing facts remain unknown. Pass a non-empty auction_id to get_auction_status, or discover links with search_auctions; an absent link means unknown auction status. A not-found listing requires a fresh search. Seller contacts and reserves stay private. Use prepare_vehicle_handoff for a selected car and get_buying_guide for purchase terms.",
+      "description": "Read a car listing's public specifications, asking price and inspection evidence; search_vehicles discovers candidates and compare_vehicles compares them.\n\n- Resolve an ID or slug to the returned canonical listing_id before counting offers. It identifies an advertisement; multiple advertisements do not establish independent inspection evidence.\n- Pass a non-empty auction_id to get_auction; an absent link means unknown auction status. Use search_auctions for discovery and prepare_vehicle_handoff for a selected car's human enquiry.\n- Anonymous fresh lookup. Missing facts stay unknown; a not-found listing requires a fresh search. Seller contacts and reserve prices stay private, and nothing is reserved.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1006,6 +1006,12 @@
           "vehicle_id"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
       },
       "outputSchema": {
         "type": "object",
@@ -1228,18 +1234,12 @@
             "additionalProperties": false
           }
         }
-      },
-      "annotations": {
-        "readOnlyHint": true,
-        "destructiveHint": false,
-        "idempotentHint": true,
-        "openWorldHint": false
       }
     },
     {
-      "name": "get_auction_status",
+      "name": "get_auction",
       "title": "Read public car auction status",
-      "description": "Observe one known car auction's public bid state; search_auctions discovers auction IDs and get_vehicle supplies listing facts.\nAuction IDs and listing IDs are different namespaces. A saved link can outlive a live auction: inspect status and end_at rather than inferring availability from the ID. minimum_next_bid exists only for a live numeric bid and increment; never substitute the vehicle's asking price for a bid.\nAnonymous snapshot read. Feature gating, rate limits or an unknown auction can return an error; do not bypass them. Bid observations can change immediately. Reserves and bidder identities stay private. Bidding requires a verified dealer and human decision; this tool cannot bid.",
+      "description": "Observe one car auction's public bid state; search_auctions discovers IDs and get_vehicle supplies the linked car's facts.\n\n- Select auction_id from the same discovery/detail record as the car being discussed. It identifies a sale event, not the vehicle advertisement: never substitute listing_id or carry a bid between auction IDs.\n- A saved event ID does not imply an open auction. Read status/end_at and refresh the snapshot before answering a bid question. minimum_next_bid is optional; an asking price cannot fill a missing bid value.\n- Anonymous observation only. Feature gating, rate limits or an unknown event can return errors; report them without bypass. Reserves and bidder identities stay private. Bidding requires a verified dealer and human decision outside this tool.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1247,13 +1247,19 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 64,
-            "description": "Non-empty auction_id returned by get_vehicle for an auction-linked listing, or a known public auction ID provided by the buyer. At most 64 letters/digits/underscores/hyphens; not a vehicle listing_id or URL. Do not fabricate an ID when none is returned."
+            "description": "Copy auction_id from search_auctions or an auction-linked get_vehicle result, or use a known public auction ID supplied by the buyer. Supply the event identifier alone, not a listing_id or URL; never invent one."
           }
         },
         "required": [
           "auction_id"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
       },
       "outputSchema": {
         "type": "object",
@@ -1358,18 +1364,12 @@
             "additionalProperties": false
           }
         }
-      },
-      "annotations": {
-        "readOnlyHint": true,
-        "destructiveHint": false,
-        "idempotentHint": true,
-        "openWorldHint": false
       }
     },
     {
       "name": "search_auctions",
       "title": "Discover car auction links",
-      "description": "Discover public car-auction IDs for get_auction_status without knowing an auction ID. Use get_vehicle for a known listing's details.\nquery and make filter public vehicle listings, not auction titles or bids. Unpriced cars are always included because an auction may have no fixed asking price. A page scans vehicle listings: items can be empty while next_page exists. Continue source pages before claiming no matches; if source_page_limit_reached=true, narrow the filters. source_listing_count counts vehicles, not auctions.\nAnonymous live read of already-public links. A linked auction may be ended or feature-gated; get_auction_status determines availability. This neither exposes private lots nor places bids. Human purchase routes are in get_buying_guide.",
+      "description": "Discover existing public car-auction IDs for get_auction; use get_vehicle for a known listing's details.\n\n- Express the desired car, not an auction title or bid: make='Toyota' scans that manufacturer's listings; add query='Premio' only for a model-specific request. Unpriced cars remain eligible because an auction need not have an asking price.\n- Pagination scans vehicles before extracting their links. Follow next_page even after an empty items page; claim the scan exhausted only when no next page remains and the source limit was not reached. At the limit, narrow the vehicle filters. Source counts are not auction counts.\n- Anonymous live read. Check each selected auction's current availability with get_auction; a link may be ended or feature-gated. No private lot is exposed or bid placed.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1399,6 +1399,12 @@
           }
         },
         "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
       },
       "outputSchema": {
         "type": "object",
@@ -1501,18 +1507,12 @@
             "additionalProperties": false
           }
         }
-      },
-      "annotations": {
-        "readOnlyHint": true,
-        "destructiveHint": false,
-        "idempotentHint": true,
-        "openWorldHint": false
       }
     },
     {
       "name": "compare_vehicles",
       "title": "Compare shortlisted car listings",
-      "description": "Compare a selected car shortlist; use search_vehicles to discover candidates or get_vehicle for one car.\nvehicle_ids is an ordered include-list, not a search filter. IDs and slugs may mix, but aliases of one returned listing_id are not independent offers. Lookups are independent: inspect not_found and unavailable, and retry temporary failures before excluding a candidate.\nAnonymous live read. Unknown or non-positive prices become null. A cheapest result requires two distinct positive-priced listings; when price_comparison_complete=false it ranks only the known-price subset. Asking prices are not valuations or agreed sale prices. Pass a selected listing to prepare_vehicle_handoff; comparison reserves nothing.",
+      "description": "Compare a selected car shortlist; use search_vehicles to discover candidates or get_vehicle for one car.\n\n- vehicle_ids chooses the adverts to include, in buyer-selected order; it does not rerun search filters. Resolve ID/slug aliases to distinct listing_id values. Repeating an advert must not create extra price evidence or imply another vehicle.\n- Keep unknown-price candidates visible when the buyer still wants to consider them. A cheapest result ranks only distinct, known positive prices; inspect price_comparison_complete before describing it as cheapest across the whole shortlist. Asking prices are not valuations.\n- Anonymous fresh lookups can partially fail. Inspect not_found/unavailable and retry temporary failures before excluding a candidate. Use prepare_vehicle_handoff after choosing; comparison reserves nothing.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1532,6 +1532,12 @@
           "vehicle_ids"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
       },
       "outputSchema": {
         "type": "object",
@@ -1862,22 +1868,22 @@
             "additionalProperties": false
           }
         }
+      }
+    },
+    {
+      "name": "get_buying_guide",
+      "title": "Bangladesh buying terms",
+      "description": "Read published Bangladesh retail-parts payment, delivery and human-contact terms before explaining a purchase.\n\n- Call {}. These terms come from the public retail-marketplace configuration, not a product, address or buyer account. Product choice cannot personalize this call: get_part supplies item eligibility and prepare_part_handoff prepares the enquiry.\n- Apply the returned zones after learning the buyer's area; confirm quantity/fitment separately from get_part. Retail checkout terms do not establish vehicle, auction or trade-credit terms; route car questions through prepare_vehicle_handoff.\n- Anonymous live read. Money objects separate major BDT from minor paisa; vat_bps uses basis points. If live_terms_unavailable=true, ask the human team rather than invent fees. The result is guidance, not an accepted quote; no payment or message starts.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
         "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": false
-      }
-    },
-    {
-      "name": "get_buying_guide",
-      "title": "Bangladesh buying terms",
-      "description": "Read JOY's Bangladesh payment, delivery and human-contact terms before explaining a purchase; get_part supplies item prices and prepare_buyer_handoff prepares a parts enquiry.\nCall {}: this anonymous market-wide guide is not an order or address lookup. Arguments cannot change its country or personalize fees. Select a returned delivery zone after learning the buyer's area; do not pass an address here or treat the result as an accepted quote.\nLive terms can change. Money objects distinguish BDT major units from amount_minor (paisa); 1500 vat_bps means 15%. If live_terms_unavailable=true, ask JOY's human team instead of inferring missing fees. No payment or message starts.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {},
-        "additionalProperties": false
       },
       "outputSchema": {
         "type": "object",
@@ -2034,18 +2040,12 @@
             "additionalProperties": false
           }
         }
-      },
-      "annotations": {
-        "readOnlyHint": true,
-        "destructiveHint": false,
-        "idempotentHint": true,
-        "openWorldHint": false
       }
     },
     {
       "name": "prepare_vehicle_handoff",
       "title": "Prepare a human car enquiry",
-      "description": "Prepare a listing link and pre-filled WhatsApp enquiry for a human considering one car; use prepare_buyer_handoff for spare parts and compare_vehicles before choosing between cars.\nChoose vehicle_id from a shortlisted listing, not an auction ID. A slug is resolved to the canonical listing_id before the message is composed. note records the buyer's request; it cannot change the asking price, certify condition or authorize a bid. The link embeds the note, so omit unnecessary personal details.\nAnonymous fresh lookup. This is the endpoint of the public research workflow: the human decides whether to open and send the enquiry, then JOY confirms availability, inspection and terms. No seller contact, booking, reservation, bid, order or payment is performed.",
+      "description": "Prepare a listing link and pre-filled WhatsApp enquiry for a human considering one car; use prepare_part_handoff for spare parts and compare_vehicles before choosing between cars.\nChoose vehicle_id from a shortlisted listing, not an auction ID. A slug is resolved to the canonical listing_id before the message is composed. note records the buyer's request; it cannot change the asking price, certify condition or authorize a bid. The link embeds the note, so omit unnecessary personal details.\nAnonymous fresh lookup. This is the endpoint of the public research workflow: the human decides whether to open and send the enquiry, then JOY confirms availability, inspection and terms. No seller contact, booking, reservation, bid, order or payment is performed.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2065,6 +2065,12 @@
           "vehicle_id"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
       },
       "outputSchema": {
         "type": "object",
@@ -2181,18 +2187,12 @@
             "additionalProperties": false
           }
         }
-      },
-      "annotations": {
-        "readOnlyHint": true,
-        "destructiveHint": false,
-        "idempotentHint": true,
-        "openWorldHint": false
       }
     },
     {
-      "name": "prepare_buyer_handoff",
+      "name": "prepare_part_handoff",
       "title": "Prepare purchase handoff",
-      "description": "Prepare product and pre-filled WhatsApp links for a human parts enquiry; use get_buying_guide for general purchase terms.\nQuantity, vehicle and note annotate the request: quantity neither turns the catalogue price into a payable quote nor satisfies minimum-order rules. Vehicle/VIN text requests fitment review; it does not prove compatibility. Review the returned restrictions before offering the link, and do not let a free-text note override them. Provided vehicle/note text is embedded in the link, so omit unnecessary personal details.\nAnonymous fresh part lookup. Creating links opens or sends nothing and does not create an RFQ, order, reservation or charge. The human decides whether to send; JOY must confirm eligibility, stock, fitment and price.",
+      "description": "Prepare product and pre-filled WhatsApp links for a human parts enquiry; use prepare_vehicle_handoff for whole cars.\n\n- First search_parts, then get_part, then copy the selected part_id here. Use get_buying_guide for general terms. Ask the buyer for missing fitment fields identified by get_part; never invent vehicle identity to complete an enquiry.\n- Keep quantity as the buyer's requested count, even below the published minimum: explain the gap rather than silently raising it. vehicle supplies fitment context; note can request confirmation but cannot override returned restrictions. Unit price times quantity is not an accepted quote.\n- Anonymous fresh lookup. Text is embedded in the link, so omit unnecessary personal details. Nothing opens, sends, reserves, orders or charges; the human decides whether to send and JOY confirms eligibility, fitment, stock and price.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2207,23 +2207,29 @@
             "minimum": 1,
             "maximum": 10000,
             "default": 1,
-            "description": "Requested item count inserted into the WhatsApp message, 1 through 10,000; defaults to 1. Does not reserve quantity, satisfy minimum order rules or multiply/lock a payable quote."
+            "description": "Number of units the buyer wants to enquire about, included in the prepared message. This is a request count, not a stock allocation."
           },
           "vehicle": {
             "type": "string",
             "maxLength": 120,
-            "description": "Optional make/model/year, chassis or VIN text included in the human message for fitment review; not automatically decoded or proof of compatibility."
+            "description": "Buyer-provided make/model/year, chassis or VIN text for JOY's human fitment review. Omit if the buyer has not supplied vehicle information."
           },
           "note": {
             "type": "string",
             "maxLength": 300,
-            "description": "Optional buyer request included verbatim as a note in the pre-filled WhatsApp message, up to 300 characters. It is not sent until the human chooses to send the message."
+            "description": "Buyer-supplied question or preference copied into the prepared enquiry, such as a request to confirm delivery or bulk terms."
           }
         },
         "required": [
           "part_id"
         ],
         "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
       },
       "outputSchema": {
         "type": "object",
@@ -2428,12 +2434,6 @@
             "additionalProperties": false
           }
         }
-      },
-      "annotations": {
-        "readOnlyHint": true,
-        "destructiveHint": false,
-        "idempotentHint": true,
-        "openWorldHint": false
       }
     }
   ]

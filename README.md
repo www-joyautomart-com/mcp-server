@@ -14,7 +14,7 @@ The server is hosted by JOY Automart; you do not need to run anything to use it.
 
 ## Tools
 
-Ten public, read-only tools (no account needed), verified against hosted version **1.2.2** on October 31, 2026. The live `tools/list` snapshot in [`tools.json`](tools.json) includes all **35 documented arguments** and typed success/error output schemas. `*` marks a required argument.
+Ten public, read-only tools (no account needed), verified against hosted version **1.3.0** on October 31, 2026. The live `tools/list` snapshot in [`tools.json`](tools.json) includes all **35 documented arguments** and typed success/error output schemas. `*` marks a required argument.
 
 | Tool | What it does | Arguments |
 |---|---|---|
@@ -22,14 +22,16 @@ Ten public, read-only tools (no account needed), verified against hosted version
 | `get_part` | Read one catalogue part's public detail, price, stock and fitment evidence. | `part_id`* |
 | `search_vehicles` | Search public vehicle listings by text, make, year, fuel, verification and BDT asking price. | `query`, `make`, `fuel_type`, `verified_only`, `include_unpriced`, `min_year`, `max_year`, `min_price_bdt`, `max_price_bdt`, `sort`, `page`, `page_size` |
 | `get_vehicle` | Read a vehicle by listing ID or slug, including public photos, inspection evidence and any auction link. | `vehicle_id`* |
-| `get_auction_status` | Read an existing auction's public bid/status snapshot when public access is enabled. | `auction_id`* |
+| `get_auction` | Read an existing auction's public bid/status snapshot when public access is enabled. | `auction_id`* |
 | `search_auctions` | Discover already-public auction links while paging through vehicle listings; source counts are not auction counts. | `query`, `make`, `page`, `page_size` |
 | `compare_vehicles` | Compare 2–4 listings with explicit missing listings and unknown-price coverage. | `vehicle_ids`* |
 | `get_buying_guide` | Read Bangladesh buying terms, delivery/payment guidance, human contact and declared fallback status. | — |
 | `prepare_vehicle_handoff` | Resolve a public vehicle and prepare its listing link and human-reviewed WhatsApp enquiry. | `vehicle_id`*, `note` |
-| `prepare_buyer_handoff` | Prepare a product link and WhatsApp enquiry for a human to review and send. | `part_id`*, `quantity`, `vehicle`, `note` |
+| `prepare_part_handoff` | Resolve a selected part after search and detail lookup, then prepare its product link and human-reviewed WhatsApp enquiry. | `part_id`*, `quantity`, `vehicle`, `note` |
 
 Auction discovery scans public vehicle pages and reports source pagination, not a guaranteed count of active auctions. Public snapshot access retains its existing feature gate. Both handoff tools prepare links only; they send no message, reserve no stock or vehicle, and place no order.
+
+Existing clients can still call `get_auction_status` and `prepare_buyer_handoff` as compatibility aliases for `get_auction` and `prepare_part_handoff`. Discovery advertises only the canonical names above.
 
 All public tools are annotated `readOnlyHint: true`. **Fitment is guidance only:** the server never claims a part fits a vehicle without VIN/chassis evidence; confirm with JOY's sales team before buying.
 
