@@ -3,55 +3,381 @@
     {
       "name": "search_parts",
       "title": "Search car parts",
-      "description": "Search JOY Automart's automotive parts catalogue in Bangladesh. Accepts English, Bangla (e.g. 'টয়োটা এক্সিও ব্রেক প্যাড') or Banglish. Returns retail prices in BDT, availability and a product URL. Catalogue-only RFQ templates are omitted unless include_rfq_catalogue is true. Results are fitment candidates, not guarantees.",
+      "description": "Find spare-part candidates in JOY's Bangladesh catalogue; use get_part for a selected item and search_vehicles for whole cars.\nCombine filters, e.g. {\"make\":\"Toyota\",\"query\":\"brake pads\",\"max_price_bdt\":5000}. An OEM reference belongs in query, not part_id. Keep filters fixed while paging: total can exceed the current items count. Zero matches is valid; correct the query or relax a filter rather than inventing availability.\nAnonymous live read. RFQ templates need opt-in and may remain unsellable. Bangla interpretation failures are explicit errors. Confirm VIN/chassis fitment before prepare_buyer_handoff; nothing reserves stock.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "query": {
             "type": "string",
             "maxLength": 120,
-            "description": "Part name, OEM number or vehicle, in English or Bangla."
+            "description": "Part name, OEM reference or vehicle words in English, Bangla or Banglish; e.g. 'Axio brake pads' or 'টয়োটা এক্সিও ব্রেক প্যাড'. Omit for filtered browsing; not a part_id lookup."
           },
           "make": {
             "type": "string",
             "maxLength": 80,
-            "description": "Vehicle make, e.g. Toyota."
+            "description": "Vehicle manufacturer, e.g. Toyota; narrows part candidates alongside the query. Omit if unknown."
           },
           "chassis": {
             "type": "string",
             "maxLength": 40,
-            "description": "Chassis code, e.g. NZE141 or G05."
+            "description": "Vehicle chassis/model code, e.g. NZE141 or G05; not a full VIN. Narrows candidates and does not certify fitment."
           },
           "category": {
             "type": "string",
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "Public category label from a catalogue result, e.g. Brakes. Omit if the category is unknown."
           },
           "in_stock_only": {
             "type": "boolean",
-            "default": false
+            "default": false,
+            "description": "True requests currently in-stock candidates; false (default) permits other public availability states. This does not reserve stock."
           },
           "include_rfq_catalogue": {
             "type": "boolean",
             "default": false,
-            "description": "Include catalogue-only templates available through a parts request (RFQ)."
+            "description": "True also includes catalogue-only templates requiring a human parts request; false (default) omits them. Inclusion does not make an item directly purchasable."
           },
           "max_price_bdt": {
             "type": "number",
-            "minimum": 0
+            "minimum": 0,
+            "description": "Inclusive maximum retail asking price in Bangladesh taka (BDT), e.g. 5000 means ৳5,000; omit for no budget ceiling. Not lakh units and not a currency conversion."
           },
           "page": {
             "type": "integer",
             "minimum": 1,
-            "default": 1
+            "default": 1,
+            "description": "One-based results page, 1 through 500; defaults to 1. Increment to retrieve the next page with the same filters.",
+            "maximum": 500
           },
           "page_size": {
             "type": "integer",
             "minimum": 1,
             "maximum": 20,
-            "default": 10
+            "default": 10,
+            "description": "Maximum results requested per page, 1 through 20; defaults to 10. total describes all matches, not this page's item count."
           }
         },
         "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "page": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 500
+              },
+              "page_size": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 20
+              },
+              "currency": {
+                "type": "string",
+                "const": "BDT"
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/part"
+                },
+                "maxItems": 20
+              },
+              "fitment_notice": {
+                "type": "string"
+              },
+              "query_interpreted_as": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "total",
+              "page",
+              "page_size",
+              "currency",
+              "items",
+              "fitment_notice"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "$ref": "#/$defs/error"
+          }
+        ],
+        "$defs": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "additionalProperties": false
+          },
+          "part": {
+            "type": "object",
+            "properties": {
+              "part_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "oem_number": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "category": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "price_bdt": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "price_label": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "availability": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "stock_on_hand": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "minimum_order_quantity": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "sellable": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "fitment_candidates": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/fitment"
+                },
+                "maxItems": 8
+              },
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "oem_reference_status": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "suppression_reason": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "compatibility_constraints": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/constraints"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "hardware_specifications": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/hardware"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "product_characteristics": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/classification"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "part_id",
+              "name",
+              "oem_number",
+              "category",
+              "price_bdt",
+              "price_label",
+              "availability",
+              "stock_on_hand",
+              "minimum_order_quantity",
+              "sellable",
+              "fitment_candidates",
+              "url",
+              "oem_reference_status",
+              "suppression_reason",
+              "compatibility_constraints",
+              "hardware_specifications",
+              "product_characteristics"
+            ],
+            "additionalProperties": false
+          },
+          "classification": {
+            "type": "object",
+            "properties": {
+              "product_type": {
+                "type": "string"
+              },
+              "installation_type": {
+                "type": "string"
+              },
+              "classification_status": {
+                "type": "string"
+              },
+              "vehicle_specific": {
+                "type": "boolean"
+              },
+              "universal_accessory": {
+                "type": "boolean"
+              },
+              "universal_search_eligible": {
+                "type": "boolean"
+              },
+              "universal_constraints_verified": {
+                "type": "boolean"
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          },
+          "hardware": {
+            "type": "object",
+            "properties": {
+              "fitment_policy": {
+                "type": "string"
+              },
+              "application_note": {
+                "type": "string"
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          },
+          "constraints": {
+            "type": "object",
+            "properties": {
+              "constraint_type": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "verified": {
+                "type": "boolean"
+              },
+              "required_fields": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 16
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          },
+          "fitment": {
+            "type": "object",
+            "properties": {
+              "make": {
+                "type": "string"
+              },
+              "model": {
+                "type": "string"
+              },
+              "chassis_code": {
+                "type": "string"
+              },
+              "engine": {
+                "type": "string"
+              },
+              "fitment_confidence": {
+                "type": "string"
+              },
+              "year_from": {
+                "type": "integer"
+              },
+              "year_to": {
+                "type": "integer"
+              },
+              "jdm_chassis_codes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 16
+              },
+              "engine_codes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 16
+              },
+              "years": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                },
+                "maxItems": 200
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          }
+        }
       },
       "annotations": {
         "readOnlyHint": true,
@@ -63,20 +389,325 @@
     {
       "name": "get_part",
       "title": "Get part details",
-      "description": "Full public detail for one catalogue part: BDT price, stock, minimum order, verified offers and bulk price breaks.",
+      "description": "Read one spare part's current public price, availability and fitment restrictions; search_parts discovers IDs and prepare_buyer_handoff prepares a human enquiry.\nResolve an OEM reference or product name through search_parts, then use the returned part_id unchanged. Different catalogue IDs must not be merged merely because their OEM reference matches. A missing ID is an error, not proof that the OEM part is unavailable everywhere.\nAnonymous fresh lookup. A found product may still be unsellable: retain its fitment constraints and minimum quantity during handoff. Missing price or stock remains unknown; this lookup neither reserves supply nor verifies fitment.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "part_id": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 120
+            "maxLength": 120,
+            "description": "Exact catalogue part_id copied from search_parts, e.g. BRK-AXIO-01. This is JOY's catalogue identifier, not an OEM part number or a product URL."
           }
         },
         "required": [
           "part_id"
         ],
         "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "part_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "oem_number": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "category": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "price_bdt": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "price_label": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "availability": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "stock_on_hand": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "minimum_order_quantity": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "sellable": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "fitment_candidates": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/fitment"
+                },
+                "maxItems": 8
+              },
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "oem_reference_status": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "suppression_reason": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "compatibility_constraints": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/constraints"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "hardware_specifications": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/hardware"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "product_characteristics": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/classification"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "description": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "verified_offer_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "bulk_pricing": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "Public storefront bulk-pricing metadata; not an accepted or locked quote."
+              },
+              "currency": {
+                "type": "string",
+                "const": "BDT"
+              },
+              "fitment_notice": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "part_id",
+              "name",
+              "oem_number",
+              "category",
+              "price_bdt",
+              "price_label",
+              "availability",
+              "stock_on_hand",
+              "minimum_order_quantity",
+              "sellable",
+              "fitment_candidates",
+              "url",
+              "oem_reference_status",
+              "suppression_reason",
+              "compatibility_constraints",
+              "hardware_specifications",
+              "product_characteristics",
+              "description",
+              "verified_offer_count",
+              "bulk_pricing",
+              "currency",
+              "fitment_notice"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "$ref": "#/$defs/error"
+          }
+        ],
+        "$defs": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "additionalProperties": false
+          },
+          "classification": {
+            "type": "object",
+            "properties": {
+              "product_type": {
+                "type": "string"
+              },
+              "installation_type": {
+                "type": "string"
+              },
+              "classification_status": {
+                "type": "string"
+              },
+              "vehicle_specific": {
+                "type": "boolean"
+              },
+              "universal_accessory": {
+                "type": "boolean"
+              },
+              "universal_search_eligible": {
+                "type": "boolean"
+              },
+              "universal_constraints_verified": {
+                "type": "boolean"
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          },
+          "hardware": {
+            "type": "object",
+            "properties": {
+              "fitment_policy": {
+                "type": "string"
+              },
+              "application_note": {
+                "type": "string"
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          },
+          "constraints": {
+            "type": "object",
+            "properties": {
+              "constraint_type": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "verified": {
+                "type": "boolean"
+              },
+              "required_fields": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 16
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          },
+          "fitment": {
+            "type": "object",
+            "properties": {
+              "make": {
+                "type": "string"
+              },
+              "model": {
+                "type": "string"
+              },
+              "chassis_code": {
+                "type": "string"
+              },
+              "engine": {
+                "type": "string"
+              },
+              "fitment_confidence": {
+                "type": "string"
+              },
+              "year_from": {
+                "type": "integer"
+              },
+              "year_to": {
+                "type": "integer"
+              },
+              "jdm_chassis_codes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 16
+              },
+              "engine_codes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 16
+              },
+              "years": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                },
+                "maxItems": 200
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          }
+        }
       },
       "annotations": {
         "readOnlyHint": true,
@@ -88,44 +719,56 @@
     {
       "name": "search_vehicles",
       "title": "Search cars for sale",
-      "description": "Search JOY Auto Exchange vehicle listings in Bangladesh by make, model, year, fuel and BDT price. Only stated listing facts are returned.",
+      "description": "Discover cars for sale in JOY Auto Exchange; use get_vehicle for detail, compare_vehicles for a shortlist and search_auctions for auction links.\nFilters intersect. Use {\"make\":\"Toyota\",\"query\":\"Premio\",\"max_price_bdt\":3000000} for a Premio below 30 lakh: query matches one phrase, while make matches a prefix. Price bounds concern asking prices, not bids or valuations. POA cars need include_unpriced=true. Keep filters and sort fixed; more pages exist while page*page_size<total.\nAnonymous live read. Empty items is a valid no-match result; missing prices are not zero. Verification is inspection evidence, not a warranty. No seller is contacted or car reserved.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "query": {
             "type": "string",
-            "maxLength": 120
+            "maxLength": 120,
+            "description": "Case-insensitive phrase within make, model or trim; use query='Premio' with make='Toyota', not one combined 'Toyota Premio' phrase. Known Bangla/Banglish vocabulary is normalized; unsupported words may be dropped. Use known English model words for precision; omit to browse."
           },
           "make": {
             "type": "string",
-            "maxLength": 60
+            "maxLength": 60,
+            "description": "Case-insensitive manufacturer prefix, e.g. Toyota. Combine with query='Premio' for that model; omit to include all makes."
           },
           "fuel_type": {
             "type": "string",
-            "maxLength": 40
+            "maxLength": 40,
+            "description": "Case-insensitive prefix of a public listing's fuel label, e.g. hybrid. Copy a known label where possible; omit to include all fuel types."
           },
           "verified_only": {
             "type": "boolean",
-            "default": false
+            "default": false,
+            "description": "True requires the storefront's verified flag, approved inspection status and a non-empty inspection ID; false (default) also permits other public listings. Verification is not a vehicle warranty."
           },
           "include_unpriced": {
             "type": "boolean",
             "default": false,
-            "description": "Include vehicles with a pending or undisclosed asking price (POA)."
+            "description": "True includes price-on-application or otherwise unpriced listings; false (default) excludes them. A missing asking price is unknown, never zero."
           },
           "min_year": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Inclusive earliest model year, 1950 through 2100. Omit for no lower-year filter; supply a value no greater than max_year.",
+            "minimum": 1950,
+            "maximum": 2100
           },
           "max_year": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Inclusive latest model year, 1950 through 2100. Omit for no upper-year filter; supply a value no less than min_year.",
+            "minimum": 1950,
+            "maximum": 2100
           },
           "min_price_bdt": {
             "type": "number",
-            "minimum": 0
+            "minimum": 0,
+            "description": "Inclusive minimum stated asking price in Bangladesh taka, e.g. 2000000 means ৳20 lakh. Omit for no minimum; no greater than max_price_bdt."
           },
           "max_price_bdt": {
             "type": "number",
-            "minimum": 0
+            "minimum": 0,
+            "description": "Inclusive maximum stated asking price in Bangladesh taka, e.g. 3000000 means ৳30 lakh. Omit for no maximum; no less than min_price_bdt."
           },
           "sort": {
             "type": "string",
@@ -135,21 +778,208 @@
               "price_desc",
               "year_desc"
             ],
-            "default": "latest"
+            "default": "latest",
+            "description": "Result order: latest (default: verified first, then newest), price_asc (lowest stated price first), price_desc (highest first), or year_desc (newest model year first). Stable tie-breaks support paging; no valuation is performed."
           },
           "page": {
             "type": "integer",
             "minimum": 1,
-            "default": 1
+            "default": 1,
+            "description": "One-based results page, 1 through 500; defaults to 1. Keep filters and sort unchanged when paging.",
+            "maximum": 500
           },
           "page_size": {
             "type": "integer",
             "minimum": 1,
             "maximum": 20,
-            "default": 10
+            "default": 10,
+            "description": "Maximum results requested per page, 1 through 20; defaults to 10. total is the matching population, which may exceed this page's item count."
           }
         },
         "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "page": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 500
+              },
+              "page_size": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 20
+              },
+              "currency": {
+                "type": "string",
+                "const": "BDT"
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/vehicle"
+                },
+                "maxItems": 20
+              }
+            },
+            "required": [
+              "total",
+              "page",
+              "page_size",
+              "currency",
+              "items"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "$ref": "#/$defs/error"
+          }
+        ],
+        "$defs": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "additionalProperties": false
+          },
+          "vehicle": {
+            "type": "object",
+            "properties": {
+              "listing_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$"
+              },
+              "make": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "model": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "trim": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "condition": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "fuel_type": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "transmission": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "body_type": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "hub": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "inspection_status": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "status": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "year": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "price_bdt": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "mileage_km": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "verified": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "image": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "browse_url": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "listing_id",
+              "make",
+              "model",
+              "trim",
+              "condition",
+              "fuel_type",
+              "transmission",
+              "body_type",
+              "hub",
+              "inspection_status",
+              "status",
+              "year",
+              "price_bdt",
+              "mileage_km",
+              "verified",
+              "image",
+              "browse_url"
+            ],
+            "additionalProperties": false
+          }
+        }
       },
       "annotations": {
         "readOnlyHint": true,
@@ -161,7 +991,7 @@
     {
       "name": "get_vehicle",
       "title": "Get car details",
-      "description": "Full public detail for one JOY Auto Exchange listing (by listing id or slug): BDT price, specs, photos and, when the car passed JOY's human QC, a summary of the inspection. Only stated listing facts are returned; seller contact details and reserves are never exposed.",
+      "description": "Read a car listing's public specifications, asking price and inspection evidence; search_vehicles discovers listings and compare_vehicles compares a shortlist.\nAn ID and its slug can identify the same listing: use the returned listing_id as canonical identity before counting distinct offers. The input identifies an advertisement, not a VIN; separate advertisements do not establish separate inspection evidence.\nAnonymous live lookup. Missing facts remain unknown. Pass a non-empty auction_id to get_auction_status, or discover links with search_auctions; an absent link means unknown auction status. A not-found listing requires a fresh search. Seller contacts and reserves stay private. Use prepare_vehicle_handoff for a selected car and get_buying_guide for purchase terms.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -169,13 +999,235 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 120,
-            "description": "listing_id or slug from search_vehicles."
+            "description": "listing_id returned by search_vehicles, or slug from a public JOY listing URL. Use only the ID/slug (letters/digits, dots, underscores, hyphens; starts with a letter/digit), not the URL, VIN or registration number."
           }
         },
         "required": [
           "vehicle_id"
         ],
         "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "oneOf": [
+          {
+            "$ref": "#/$defs/vehicle_detail"
+          },
+          {
+            "$ref": "#/$defs/error"
+          }
+        ],
+        "$defs": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "additionalProperties": false
+          },
+          "vehicle_detail": {
+            "type": "object",
+            "properties": {
+              "listing_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$"
+              },
+              "make": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "model": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "trim": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "condition": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "fuel_type": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "transmission": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "body_type": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "hub": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "inspection_status": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "status": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "year": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "price_bdt": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "mileage_km": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "verified": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "description": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "auction_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "images": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 8
+              },
+              "url": {
+                "type": "string"
+              },
+              "currency": {
+                "type": "string",
+                "const": "BDT"
+              },
+              "verified_inspection": {
+                "$ref": "#/$defs/inspection"
+              }
+            },
+            "required": [
+              "listing_id",
+              "make",
+              "model",
+              "trim",
+              "condition",
+              "fuel_type",
+              "transmission",
+              "body_type",
+              "hub",
+              "inspection_status",
+              "status",
+              "year",
+              "price_bdt",
+              "mileage_km",
+              "verified",
+              "description",
+              "auction_id",
+              "images",
+              "url",
+              "currency"
+            ],
+            "additionalProperties": false
+          },
+          "inspection": {
+            "type": "object",
+            "properties": {
+              "final_grade": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "overall_score": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "repair_estimate_bdt": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "battery_health_percent": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "identity_match": {
+                "type": [
+                  "string",
+                  "boolean",
+                  "null"
+                ]
+              },
+              "qc_approved_at": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "final_grade",
+              "overall_score",
+              "repair_estimate_bdt",
+              "battery_health_percent",
+              "identity_match",
+              "qc_approved_at"
+            ],
+            "additionalProperties": false
+          }
+        }
       },
       "annotations": {
         "readOnlyHint": true,
@@ -186,21 +1238,269 @@
     },
     {
       "name": "get_auction_status",
-      "title": "Auction status",
-      "description": "Public status of one live or recent JOY auction: current bid in BDT, bid count, end time and anti-snipe extensions. Observation only: bidding needs a verified dealer account and a human. The seller's reserve and bidder identities are never shown. Returns an error while live auctions are not open.",
+      "title": "Read public car auction status",
+      "description": "Observe one known car auction's public bid state; search_auctions discovers auction IDs and get_vehicle supplies listing facts.\nAuction IDs and listing IDs are different namespaces. A saved link can outlive a live auction: inspect status and end_at rather than inferring availability from the ID. minimum_next_bid exists only for a live numeric bid and increment; never substitute the vehicle's asking price for a bid.\nAnonymous snapshot read. Feature gating, rate limits or an unknown auction can return an error; do not bypass them. Bid observations can change immediately. Reserves and bidder identities stay private. Bidding requires a verified dealer and human decision; this tool cannot bid.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "auction_id": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 64
+            "maxLength": 64,
+            "description": "Non-empty auction_id returned by get_vehicle for an auction-linked listing, or a known public auction ID provided by the buyer. At most 64 letters/digits/underscores/hyphens; not a vehicle listing_id or URL. Do not fabricate an ID when none is returned."
           }
         },
         "required": [
           "auction_id"
         ],
         "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "auction_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "status": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "start_price": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "current_bid": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "bid_increment": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "bid_count": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "end_at": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "extension_count": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "minimum_next_bid": {
+                "type": "number"
+              },
+              "currency": {
+                "type": "string",
+                "const": "BDT"
+              },
+              "note": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "auction_id",
+              "title",
+              "status",
+              "start_price",
+              "current_bid",
+              "bid_increment",
+              "bid_count",
+              "end_at",
+              "extension_count",
+              "currency",
+              "note"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "$ref": "#/$defs/error"
+          }
+        ],
+        "$defs": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "search_auctions",
+      "title": "Discover car auction links",
+      "description": "Discover public car-auction IDs for get_auction_status without knowing an auction ID. Use get_vehicle for a known listing's details.\nquery and make filter public vehicle listings, not auction titles or bids. Unpriced cars are always included because an auction may have no fixed asking price. A page scans vehicle listings: items can be empty while next_page exists. Continue source pages before claiming no matches; if source_page_limit_reached=true, narrow the filters. source_listing_count counts vehicles, not auctions.\nAnonymous live read of already-public links. A linked auction may be ended or feature-gated; get_auction_status determines availability. This neither exposes private lots nor places bids. Human purchase routes are in get_buying_guide.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Make/model/trim phrase for candidate vehicles, e.g. Premio; omit to scan all public listings. Known Bangla/Banglish vocabulary is normalized."
+          },
+          "make": {
+            "type": "string",
+            "maxLength": 60,
+            "description": "Case-insensitive manufacturer prefix, e.g. Toyota; intersects the vehicle query. Omit for all makes."
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500,
+            "default": 1,
+            "description": "One-based source vehicle page; use returned next_page with unchanged filters. This is not a page of guaranteed auction matches."
+          },
+          "page_size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "default": 10,
+            "description": "Public vehicle listings inspected per source page. Auction links can be fewer than this value, including zero."
+          }
+        },
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "maxItems": 20,
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "auction_id": {
+                      "type": "string"
+                    },
+                    "listing_id": {
+                      "type": "string"
+                    },
+                    "vehicle_url": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "auction_id",
+                    "listing_id",
+                    "vehicle_url"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "source_listing_count": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Matching source vehicle listings across pages; not an auction count."
+              },
+              "scanned_listing_count": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Source vehicle records inspected on this page."
+              },
+              "page": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 500
+              },
+              "page_size": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 20
+              },
+              "has_more_source_listings": {
+                "type": "boolean"
+              },
+              "next_page": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 500,
+                "description": "Next source vehicle page; may also contain no auction links. Null at the last page or the page limit."
+              },
+              "source_page_limit_reached": {
+                "type": "boolean"
+              },
+              "discovery_notice": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "items",
+              "source_listing_count",
+              "scanned_listing_count",
+              "page",
+              "page_size",
+              "has_more_source_listings",
+              "next_page",
+              "source_page_limit_reached",
+              "discovery_notice"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "$ref": "#/$defs/error"
+          }
+        ],
+        "$defs": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "additionalProperties": false
+          }
+        }
       },
       "annotations": {
         "readOnlyHint": true,
@@ -211,8 +1511,8 @@
     },
     {
       "name": "compare_vehicles",
-      "title": "Compare cars",
-      "description": "Side-by-side comparison of 2 to 4 listings (ids or slugs from search_vehicles): price, year, mileage, fuel, verification and inspection grade. Listings that cannot be found are reported, not hidden.",
+      "title": "Compare shortlisted car listings",
+      "description": "Compare a selected car shortlist; use search_vehicles to discover candidates or get_vehicle for one car.\nvehicle_ids is an ordered include-list, not a search filter. IDs and slugs may mix, but aliases of one returned listing_id are not independent offers. Lookups are independent: inspect not_found and unavailable, and retry temporary failures before excluding a candidate.\nAnonymous live read. Unknown or non-positive prices become null. A cheapest result requires two distinct positive-priced listings; when price_comparison_complete=false it ranks only the known-price subset. Asking prices are not valuations or agreed sale prices. Pass a selected listing to prepare_vehicle_handoff; comparison reserves nothing.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -224,13 +1524,344 @@
               "maxLength": 120
             },
             "minItems": 2,
-            "maxItems": 4
+            "maxItems": 4,
+            "description": "Two to four listing_id values from search_vehicles or public listing slugs, not VINs or URLs. Choose distinct listings; repeated IDs or an ID and its slug do not provide separate price evidence."
           }
         },
         "required": [
           "vehicle_ids"
         ],
         "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "currency": {
+                "type": "string",
+                "const": "BDT"
+              },
+              "vehicles": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/vehicle_detail"
+                },
+                "maxItems": 4
+              },
+              "not_found": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "unavailable": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "vehicle_id": {
+                      "type": "string"
+                    },
+                    "http_status": {
+                      "type": "integer"
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "vehicle_id",
+                    "http_status",
+                    "reason"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "requested_listing_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "found_listing_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "not_found_listing_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "unavailable_listing_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "known_price_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "unknown_price_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "known_price_listing_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "unknown_price_listing_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "price_comparison_complete": {
+                "type": "boolean"
+              },
+              "cheapest_listing_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "price_comparison_notice": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "currency",
+              "vehicles",
+              "not_found",
+              "unavailable",
+              "requested_listing_count",
+              "found_listing_count",
+              "not_found_listing_count",
+              "unavailable_listing_count",
+              "known_price_count",
+              "unknown_price_count",
+              "known_price_listing_ids",
+              "unknown_price_listing_ids",
+              "price_comparison_complete",
+              "cheapest_listing_id",
+              "price_comparison_notice"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "$ref": "#/$defs/error"
+          }
+        ],
+        "$defs": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "additionalProperties": false
+          },
+          "vehicle_detail": {
+            "type": "object",
+            "properties": {
+              "listing_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$"
+              },
+              "make": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "model": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "trim": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "condition": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "fuel_type": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "transmission": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "body_type": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "hub": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "inspection_status": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "status": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "year": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "price_bdt": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "mileage_km": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "verified": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "description": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "auction_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "images": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 8
+              },
+              "url": {
+                "type": "string"
+              },
+              "currency": {
+                "type": "string",
+                "const": "BDT"
+              },
+              "verified_inspection": {
+                "$ref": "#/$defs/inspection"
+              }
+            },
+            "required": [
+              "listing_id",
+              "make",
+              "model",
+              "trim",
+              "condition",
+              "fuel_type",
+              "transmission",
+              "body_type",
+              "hub",
+              "inspection_status",
+              "status",
+              "year",
+              "price_bdt",
+              "mileage_km",
+              "verified",
+              "description",
+              "auction_id",
+              "images",
+              "url",
+              "currency"
+            ],
+            "additionalProperties": false
+          },
+          "inspection": {
+            "type": "object",
+            "properties": {
+              "final_grade": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "overall_score": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "repair_estimate_bdt": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "battery_health_percent": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "identity_match": {
+                "type": [
+                  "string",
+                  "boolean",
+                  "null"
+                ]
+              },
+              "qc_approved_at": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "final_grade",
+              "overall_score",
+              "repair_estimate_bdt",
+              "battery_health_percent",
+              "identity_match",
+              "qc_approved_at"
+            ],
+            "additionalProperties": false
+          }
+        }
       },
       "annotations": {
         "readOnlyHint": true,
@@ -242,11 +1873,314 @@
     {
       "name": "get_buying_guide",
       "title": "Bangladesh buying terms",
-      "description": "How to buy from JOY Automart: currency (BDT), payment methods (card, bKash/Nagad/Rocket, cash on delivery), Dhaka and nationwide delivery zones and fees, human contact, and how an authenticated agent can place orders.",
+      "description": "Read JOY's Bangladesh payment, delivery and human-contact terms before explaining a purchase; get_part supplies item prices and prepare_buyer_handoff prepares a parts enquiry.\nCall {}: this anonymous market-wide guide is not an order or address lookup. Arguments cannot change its country or personalize fees. Select a returned delivery zone after learning the buyer's area; do not pass an address here or treat the result as an accepted quote.\nLive terms can change. Money objects distinguish BDT major units from amount_minor (paisa); 1500 vat_bps means 15%. If live_terms_unavailable=true, ask JOY's human team instead of inferring missing fees. No payment or message starts.",
       "inputSchema": {
         "type": "object",
         "properties": {},
         "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "market": {
+                "type": "string",
+                "const": "Bangladesh"
+              },
+              "currency": {
+                "type": "string",
+                "const": "BDT"
+              },
+              "languages": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "human_sales_contact": {
+                "type": "object",
+                "properties": {
+                  "whatsapp": {
+                    "type": "string"
+                  },
+                  "whatsapp_url": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "whatsapp",
+                  "whatsapp_url"
+                ],
+                "additionalProperties": false
+              },
+              "how_to_buy": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "fitment_policy": {
+                "type": "string"
+              },
+              "live_terms_unavailable": {
+                "type": "boolean"
+              },
+              "payment_methods": {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "object"
+                    }
+                  ]
+                }
+              },
+              "delivery_zones": {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "object"
+                    }
+                  ]
+                }
+              },
+              "minimum_order": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/money"
+                  },
+                  {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "free_delivery_threshold": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/money"
+                  },
+                  {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "vat_bps": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "market",
+              "currency",
+              "languages",
+              "human_sales_contact",
+              "how_to_buy",
+              "fitment_policy"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "$ref": "#/$defs/error"
+          }
+        ],
+        "$defs": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "additionalProperties": false
+          },
+          "money": {
+            "type": "object",
+            "properties": {
+              "amount_minor": {
+                "type": "integer",
+                "description": "Minor currency units: 100 paisa = 1 BDT."
+              },
+              "currency": {
+                "type": "string"
+              },
+              "major": {
+                "type": "string",
+                "description": "Decimal amount in major currency units, formatted as text."
+              }
+            },
+            "required": [
+              "amount_minor",
+              "currency",
+              "major"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "prepare_vehicle_handoff",
+      "title": "Prepare a human car enquiry",
+      "description": "Prepare a listing link and pre-filled WhatsApp enquiry for a human considering one car; use prepare_buyer_handoff for spare parts and compare_vehicles before choosing between cars.\nChoose vehicle_id from a shortlisted listing, not an auction ID. A slug is resolved to the canonical listing_id before the message is composed. note records the buyer's request; it cannot change the asking price, certify condition or authorize a bid. The link embeds the note, so omit unnecessary personal details.\nAnonymous fresh lookup. This is the endpoint of the public research workflow: the human decides whether to open and send the enquiry, then JOY confirms availability, inspection and terms. No seller contact, booking, reservation, bid, order or payment is performed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "vehicle_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "description": "A selected listing_id from search_vehicles/compare_vehicles, or a public listing slug. Supply only the ID/slug, not a full URL or VIN."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "Optional human enquiry, e.g. request an inspection or confirm availability. Included in the pre-filled link; not submitted by this tool."
+          }
+        },
+        "required": [
+          "vehicle_id"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "listing_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$"
+              },
+              "vehicle_url": {
+                "type": "string"
+              },
+              "summary": {
+                "type": "object",
+                "properties": {
+                  "make": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "model": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "year": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "price_bdt": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "verified": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "inspection_status": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "currency": {
+                    "type": "string",
+                    "const": "BDT"
+                  }
+                },
+                "required": [
+                  "make",
+                  "model",
+                  "year",
+                  "price_bdt",
+                  "verified",
+                  "inspection_status",
+                  "currency"
+                ],
+                "additionalProperties": false
+              },
+              "whatsapp_enquiry_url": {
+                "type": "string"
+              },
+              "pricing_notice": {
+                "type": "string"
+              },
+              "inspection_notice": {
+                "type": "string"
+              },
+              "side_effects": {
+                "type": "string"
+              },
+              "next_step": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "listing_id",
+              "vehicle_url",
+              "summary",
+              "whatsapp_enquiry_url",
+              "pricing_notice",
+              "inspection_notice",
+              "side_effects",
+              "next_step"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "$ref": "#/$defs/error"
+          }
+        ],
+        "$defs": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "additionalProperties": false
+          }
+        }
       },
       "annotations": {
         "readOnlyHint": true,
@@ -258,35 +2192,242 @@
     {
       "name": "prepare_buyer_handoff",
       "title": "Prepare purchase handoff",
-      "description": "Compose the links a human buyer uses to complete a purchase: the product page and a pre-filled WhatsApp message with canonical part details and fitment limitations. JOY confirms pricing and purchase eligibility. Creates nothing and charges nothing.",
+      "description": "Prepare product and pre-filled WhatsApp links for a human parts enquiry; use get_buying_guide for general purchase terms.\nQuantity, vehicle and note annotate the request: quantity neither turns the catalogue price into a payable quote nor satisfies minimum-order rules. Vehicle/VIN text requests fitment review; it does not prove compatibility. Review the returned restrictions before offering the link, and do not let a free-text note override them. Provided vehicle/note text is embedded in the link, so omit unnecessary personal details.\nAnonymous fresh part lookup. Creating links opens or sends nothing and does not create an RFQ, order, reservation or charge. The human decides whether to send; JOY must confirm eligibility, stock, fitment and price.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "part_id": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 120
+            "maxLength": 120,
+            "description": "Exact part_id from search_parts/get_part for the selected item; not an OEM reference or product URL. The tool fetches fresh public part detail before composing the links."
           },
           "quantity": {
             "type": "integer",
             "minimum": 1,
             "maximum": 10000,
-            "default": 1
+            "default": 1,
+            "description": "Requested item count inserted into the WhatsApp message, 1 through 10,000; defaults to 1. Does not reserve quantity, satisfy minimum order rules or multiply/lock a payable quote."
           },
           "vehicle": {
             "type": "string",
             "maxLength": 120,
-            "description": "Make, model, year or VIN, to speed up fitment checks."
+            "description": "Optional make/model/year, chassis or VIN text included in the human message for fitment review; not automatically decoded or proof of compatibility."
           },
           "note": {
             "type": "string",
-            "maxLength": 300
+            "maxLength": 300,
+            "description": "Optional buyer request included verbatim as a note in the pre-filled WhatsApp message, up to 300 characters. It is not sent until the human chooses to send the message."
           }
         },
         "required": [
           "part_id"
         ],
         "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "part_id": {
+                "type": "string"
+              },
+              "quantity": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "oem_number": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "oem_reference_status": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "suppression_reason": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "compatibility_constraints": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/constraints"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "hardware_specifications": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/hardware"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "product_characteristics": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/classification"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "availability": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "sellable": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "fitment_notice": {
+                "type": "string"
+              },
+              "pricing_notice": {
+                "type": "string"
+              },
+              "product_url": {
+                "type": "string"
+              },
+              "whatsapp_order_url": {
+                "type": "string"
+              },
+              "side_effects": {
+                "type": "string"
+              },
+              "next_step": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "part_id",
+              "quantity",
+              "name",
+              "oem_number",
+              "oem_reference_status",
+              "suppression_reason",
+              "compatibility_constraints",
+              "hardware_specifications",
+              "product_characteristics",
+              "availability",
+              "sellable",
+              "fitment_notice",
+              "pricing_notice",
+              "product_url",
+              "whatsapp_order_url",
+              "side_effects",
+              "next_step"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "$ref": "#/$defs/error"
+          }
+        ],
+        "$defs": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "additionalProperties": false
+          },
+          "classification": {
+            "type": "object",
+            "properties": {
+              "product_type": {
+                "type": "string"
+              },
+              "installation_type": {
+                "type": "string"
+              },
+              "classification_status": {
+                "type": "string"
+              },
+              "vehicle_specific": {
+                "type": "boolean"
+              },
+              "universal_accessory": {
+                "type": "boolean"
+              },
+              "universal_search_eligible": {
+                "type": "boolean"
+              },
+              "universal_constraints_verified": {
+                "type": "boolean"
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          },
+          "hardware": {
+            "type": "object",
+            "properties": {
+              "fitment_policy": {
+                "type": "string"
+              },
+              "application_note": {
+                "type": "string"
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          },
+          "constraints": {
+            "type": "object",
+            "properties": {
+              "constraint_type": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "verified": {
+                "type": "boolean"
+              },
+              "required_fields": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 16
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          }
+        }
       },
       "annotations": {
         "readOnlyHint": true,

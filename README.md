@@ -1,6 +1,6 @@
 # JOY Automart MCP Server
 
-Official [Model Context Protocol](https://modelcontextprotocol.io) server for **[JOY Automart](https://www.joyautomart.com)**, Bangladesh's automotive parts and vehicle marketplace. It lets AI assistants (Claude, ChatGPT, Cursor and other MCP clients) search JOY's car-parts catalogue and JOY Auto Exchange vehicle listings, compare cars, look up a part, and prepare a purchase handoff for a human buyer. Prices are in BDT.
+Official [Model Context Protocol](https://modelcontextprotocol.io) server for **[JOY Automart](https://www.joyautomart.com)**, Bangladesh's automotive parts and vehicle marketplace. It lets AI assistants (Claude, ChatGPT, Cursor and other MCP clients) search JOY's car-parts catalogue and JOY Auto Exchange vehicle listings, compare cars, discover public auction links, look up a part, and prepare part or vehicle enquiries for a human buyer. Prices are in BDT.
 
 | | |
 |---|---|
@@ -14,18 +14,22 @@ The server is hosted by JOY Automart; you do not need to run anything to use it.
 
 ## Tools
 
-Public, read-only tools (no account needed). Snapshot from a live `tools/list` call (see [`tools.json`](tools.json)); `*` marks a required argument.
+Ten public, read-only tools (no account needed), verified against hosted version **1.2.2** on October 31, 2026. The live `tools/list` snapshot in [`tools.json`](tools.json) includes all **35 documented arguments** and typed success/error output schemas. `*` marks a required argument.
 
 | Tool | What it does | Arguments |
 |---|---|---|
-| `search_parts` | Search JOY Automart's automotive parts catalogue in Bangladesh. | `query`, `make`, `chassis`, `category`, `in_stock_only`, `include_rfq_catalogue`, `max_price_bdt`, `page`, `page_size` |
-| `get_part` | Full public detail for one catalogue part: BDT price, stock, minimum order, verified offers and bulk price breaks. | `part_id`* |
-| `search_vehicles` | Search JOY Auto Exchange vehicle listings in Bangladesh by make, model, year, fuel and BDT price. | `query`, `make`, `fuel_type`, `verified_only`, `include_unpriced`, `min_year`, `max_year`, `min_price_bdt`, `max_price_bdt`, `sort`, `page`, `page_size` |
-| `get_vehicle` | Full public detail for one JOY Auto Exchange listing (by listing id or slug): BDT price, specs, photos and, when the car passed JOY's human QC, a summary of the inspection. | `vehicle_id`* |
-| `get_auction_status` | Public status of one live or recent JOY auction: current bid in BDT, bid count, end time and anti-snipe extensions. | `auction_id`* |
-| `compare_vehicles` | Side-by-side comparison of 2 to 4 listings (ids or slugs from search_vehicles): price, year, mileage, fuel, verification and inspection grade. | `vehicle_ids`* |
-| `get_buying_guide` | How to buy from JOY Automart: currency (BDT), payment methods (card, bKash/Nagad/Rocket, cash on delivery), Dhaka and nationwide delivery zones and fees, human contact, and how an authenticated agent can place orders. | — |
-| `prepare_buyer_handoff` | Compose the links a human buyer uses to complete a purchase: the product page and a pre-filled WhatsApp message with canonical part details and fitment limitations. | `part_id`*, `quantity`, `vehicle`, `note` |
+| `search_parts` | Search public parts by text, vehicle identity, category, availability and BDT budget. | `query`, `make`, `chassis`, `category`, `in_stock_only`, `include_rfq_catalogue`, `max_price_bdt`, `page`, `page_size` |
+| `get_part` | Read one catalogue part's public detail, price, stock and fitment evidence. | `part_id`* |
+| `search_vehicles` | Search public vehicle listings by text, make, year, fuel, verification and BDT asking price. | `query`, `make`, `fuel_type`, `verified_only`, `include_unpriced`, `min_year`, `max_year`, `min_price_bdt`, `max_price_bdt`, `sort`, `page`, `page_size` |
+| `get_vehicle` | Read a vehicle by listing ID or slug, including public photos, inspection evidence and any auction link. | `vehicle_id`* |
+| `get_auction_status` | Read an existing auction's public bid/status snapshot when public access is enabled. | `auction_id`* |
+| `search_auctions` | Discover already-public auction links while paging through vehicle listings; source counts are not auction counts. | `query`, `make`, `page`, `page_size` |
+| `compare_vehicles` | Compare 2–4 listings with explicit missing listings and unknown-price coverage. | `vehicle_ids`* |
+| `get_buying_guide` | Read Bangladesh buying terms, delivery/payment guidance, human contact and declared fallback status. | — |
+| `prepare_vehicle_handoff` | Resolve a public vehicle and prepare its listing link and human-reviewed WhatsApp enquiry. | `vehicle_id`*, `note` |
+| `prepare_buyer_handoff` | Prepare a product link and WhatsApp enquiry for a human to review and send. | `part_id`*, `quantity`, `vehicle`, `note` |
+
+Auction discovery scans public vehicle pages and reports source pagination, not a guaranteed count of active auctions. Public snapshot access retains its existing feature gate. Both handoff tools prepare links only; they send no message, reserve no stock or vehicle, and place no order.
 
 All public tools are annotated `readOnlyHint: true`. **Fitment is guidance only:** the server never claims a part fits a vehicle without VIN/chassis evidence; confirm with JOY's sales team before buying.
 
