@@ -9,7 +9,8 @@
   "files": [
     "bin",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "assets"
   ],
   "engines": {
     "node": ">=18"

@@ -1,5 +1,9 @@
 # JOY Automart MCP Server
 
+<p align="center">
+  <img src="assets/joy-automart-logo.png" alt="JOY Automart" width="360" />
+</p>
+
 Official [Model Context Protocol](https://modelcontextprotocol.io) server for **[JOY Automart](https://www.joyautomart.com)**, Bangladesh's automotive parts and vehicle marketplace. It lets AI assistants (Claude, ChatGPT, Cursor and other MCP clients) search JOY's car-parts catalogue and JOY Auto Exchange vehicle listings, compare cars, discover public auction links, look up a part, and prepare part or vehicle enquiries for a human buyer. Prices are in BDT.
 
 | | |

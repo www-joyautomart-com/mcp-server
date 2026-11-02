@@ -22,5 +22,14 @@
         }
       ]
     }
+  ],
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/www-joyautomart-com/mcp-server/main/assets/joy-automart-logo.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "930x555"
+      ]
+    }
   ]
 }
